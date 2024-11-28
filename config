@@ -1,0 +1,31 @@
+
+{
+    "input": {
+                "test_dataloader1.dataset.data_root": "",
+                "val_dataloader1.dataset.data_root": "",
+                "train_dataloader1.dataset.data_root": ""
+    },
+    "output": {
+                "work_dir": ""
+    },
+    "param": {
+                    "batch_size": "",
+                    "lr": "",
+                    "model_structure": "",
+                    "img_size": "",
+                    "epochs": ""
+    },
+    "others": {
+                "default_hooks":{
+                    "kafka": {
+                        "kafka_address": "kafka.icaplat-sit.svc.cluster.local:19092",
+                        "worker_id": "",
+                        "name": "kafka",
+                        "topic": "",
+                        "task_id": "",
+                        "interval": 1,
+                        "type": "TransferStationHook"
+                        }
+     }
+
+}
