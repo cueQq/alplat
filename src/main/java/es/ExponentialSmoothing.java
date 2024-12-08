@@ -8,8 +8,6 @@
 
 package es;
 
-import org.apache.flink.api.common.typeinfo.Types;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
@@ -32,31 +30,25 @@ public class ExponentialSmoothing {
         // 从CSV文件读取数据
         DataStream<String> textStream = env.readTextFile("src/main/java/es/es.csv");
 
-        /*// 将字符串数据转换为Double类型
-        DataStream<Double> dataStream = textStream.map(Double::parseDouble);*/
-        // 将字符串数据转换为包含时间戳和数值的Tuple
-        DataStream<Tuple2<LocalDateTime, Double>> dataStream = textStream.map(line -> {
-            String[] fields = line.split(",");
-            LocalDateTime timestamp = LocalDateTime.parse(fields[0], DateTimeFormatter.ISO_DATE_TIME);
-            Double value = Double.parseDouble(fields[1]);
-            return new Tuple2<>(timestamp, value);
-        }).returns(Types.TUPLE(Types.LOCAL_DATE_TIME, Types.DOUBLE));
+        // 将字符串数据转换为Double类型
+        DataStream<Double> dataStream = textStream.map(Double::parseDouble);
 
         // 设置指数平滑的参数 alpha
         double alpha = 0.5;
 
         // 对数据流应用指数平滑函数
-        /*DataStream<Double> smoothedStream = dataStream
-                .keyBy(value -> 0) // 使用 keyBy 保证状态的正确性
-                .map(new ExponentialSmoothingModel.ExponentialSmoothingFunction(alpha));*/
-        // 对数据流应用指数平滑函数
-        DataStream<Tuple2<LocalDateTime, Double>> smoothedStream = dataStream
+        DataStream<Double> smoothedStream = dataStream
                 .keyBy(value -> 0) // 使用 keyBy 保证状态的正确性
                 .map(new ExponentialSmoothingModel.ExponentialSmoothingFunction(alpha));
 
         // 打印结果
-        smoothedStream.print();
-
+        //smoothedStream.print();
+        smoothedStream.map(value -> {
+            LocalDateTime currentTimestamp = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            String formattedTimestamp = currentTimestamp.format(formatter);
+            return "[" + formattedTimestamp + "] " + value;
+        }).print();
 
         // 执行任务
         env.execute("Exponential Smoothing Job");
