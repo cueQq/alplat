@@ -11,6 +11,9 @@ package es;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 public class ExponentialSmoothing {
 
     public static void main(String[] args) throws Exception {
@@ -22,13 +25,13 @@ public class ExponentialSmoothing {
 
 
         // 模拟数据源，可以替换为实际的数据源
-        DataStream<Double> dataStream = env.fromElements(20.0, 21.0, 19.0, 18.0, 20.0);
+        //DataStream<Double> dataStream = env.fromElements(20.0, 21.0, 19.0, 18.0, 20.0);
 
         // 从CSV文件读取数据
-        //DataStream<String> textStream = env.readTextFile("./es.csv");
+        DataStream<String> textStream = env.readTextFile("src/main/java/es/es.csv");
 
         // 将字符串数据转换为Double类型
-        //DataStream<Double> dataStream = textStream.map(Double::parseDouble);
+        DataStream<Double> dataStream = textStream.map(Double::parseDouble);
 
         // 设置指数平滑的参数 alpha
         double alpha = 0.5;
@@ -39,7 +42,13 @@ public class ExponentialSmoothing {
                 .map(new ExponentialSmoothingModel.ExponentialSmoothingFunction(alpha));
 
         // 打印结果
-        smoothedStream.print();
+        //smoothedStream.print();
+        smoothedStream.map(value -> {
+            LocalDateTime currentTimestamp = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            String formattedTimestamp = currentTimestamp.format(formatter);
+            return "[" + formattedTimestamp + "] " + value;
+        }).print();
 
         // 执行任务
         env.execute("Exponential Smoothing Job");
