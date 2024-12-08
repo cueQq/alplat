@@ -42,13 +42,8 @@ public class ExponentialSmoothing {
                 .map(new ExponentialSmoothingModel.ExponentialSmoothingFunction(alpha));
 
         // 打印结果
-        //smoothedStream.print();
-        smoothedStream.map(value -> {
-            LocalDateTime currentTimestamp = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            String formattedTimestamp = currentTimestamp.format(formatter);
-            return "[" + formattedTimestamp + "] " + value;
-        }).print();
+        smoothedStream.print();
+
 
         // 执行任务
         env.execute("Exponential Smoothing Job");

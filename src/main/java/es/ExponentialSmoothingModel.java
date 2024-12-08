@@ -1,11 +1,3 @@
-/*
- * Copyright (c) 2024. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
- * Morbi non lorem porttitor neque feugiat blandit. Ut vitae ipsum eget quam lacinia accumsan.
- * Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
- * Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
- * Vestibulum commodo. Ut rhoncus gravida arcu.
- */
-
 package es;
 
 import org.apache.flink.api.common.functions.RichMapFunction;
@@ -26,7 +18,7 @@ public class ExponentialSmoothingModel {
 
         @Override
         public void open(Configuration parameters) throws Exception {
-            // 初始化状态，用于保存上一次的平滑值
+            // Initialize state to store the last smoothed value
             ValueStateDescriptor<Double> descriptor = new ValueStateDescriptor<>(
                     "lastSmoothedValue", Double.class);
             lastSmoothedValue = getRuntimeContext().getState(descriptor);
@@ -37,13 +29,13 @@ public class ExponentialSmoothingModel {
             Double last = lastSmoothedValue.value();
             Double smoothedValue;
             if (last == null) {
-                // 初始情况下，平滑值等于当前值
+                // Initially, the smoothed value is equal to the current value
                 smoothedValue = value;
             } else {
-                // 计算新的平滑值
+                // Calculate the new smoothed value
                 smoothedValue = alpha * value + (1 - alpha) * last;
             }
-            // 更新状态
+            // Update the state
             lastSmoothedValue.update(smoothedValue);
             return smoothedValue;
         }

@@ -10,34 +10,37 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 public class estest {
 
     public static void main(String[] args) throws Exception {
-        // 创建执行环境
+        // Create execution environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // 设置全局并行度为 1(输出就不会出现18>)
+        // Set global parallelism to 1 (output will not be interleaved)
         env.setParallelism(1);
 
-        // 从CSV文件读取数据
+        // Read data from CSV file
         DataStream<String> textStream = env.readTextFile("./es.csv");
 
-        // 将字符串数据转换为Double类型
+        // Print the raw data to verify if it is read correctly
+        textStream.print("Raw Data");
+
+        // Convert string data to Double type
         DataStream<Double> dataStream = textStream.map(Double::parseDouble);
 
-        // 设置指数平滑的参数 alpha
+        // Set the parameter alpha for exponential smoothing
         double alpha = 0.5;
 
-        // 对数据流应用指数平滑函数
+        // Apply exponential smoothing function to the data stream
         DataStream<Double> smoothedStream = dataStream
-                .keyBy(value -> 0) // 使用 keyBy 保证状态的正确性
+                .keyBy(value -> 0) // Use keyBy to ensure state correctness
                 .map(new ExponentialSmoothingFunction(alpha));
 
-        // 打印结果
-        smoothedStream.print();
+        // Print the result
+        smoothedStream.print("Smoothed Data");
 
-        // 执行任务
+        // Execute the job
         env.execute("Exponential Smoothing Job");
     }
 
-    // 自定义的 RichMapFunction，用于指数平滑
+    // Custom RichMapFunction for exponential smoothing
     public static class ExponentialSmoothingFunction extends RichMapFunction<Double, Double> {
 
         private final double alpha;
@@ -49,7 +52,7 @@ public class estest {
 
         @Override
         public void open(Configuration parameters) throws Exception {
-            // 初始化状态，用于保存上一次的平滑值
+            // Initialize state to store the last smoothed value
             ValueStateDescriptor<Double> descriptor = new ValueStateDescriptor<>(
                     "lastSmoothedValue", Double.class);
             lastSmoothedValue = getRuntimeContext().getState(descriptor);
@@ -60,13 +63,13 @@ public class estest {
             Double last = lastSmoothedValue.value();
             Double smoothedValue;
             if (last == null) {
-                // 初始情况下，平滑值等于当前值
+                // Initially, the smoothed value is equal to the current value
                 smoothedValue = value;
             } else {
-                // 计算新的平滑值
+                // Calculate the new smoothed value
                 smoothedValue = alpha * value + (1 - alpha) * last;
             }
-            // 更新状态
+            // Update the state
             lastSmoothedValue.update(smoothedValue);
             return smoothedValue;
         }
