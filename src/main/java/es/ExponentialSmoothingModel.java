@@ -1,43 +1,56 @@
+/*
+ * Copyright (c) 2024. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+ * Morbi non lorem porttitor neque feugiat blandit. Ut vitae ipsum eget quam lacinia accumsan.
+ * Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
+ * Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
+ * Vestibulum commodo. Ut rhoncus gravida arcu.
+ */
+
 package es;
 
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 
 public class ExponentialSmoothingModel {
 
-    public static class ExponentialSmoothingFunction extends RichMapFunction<Double, Double> {
 
-        private final double alpha;
+    // 自定义的 RichMapFunction，用于指数平滑
+    public static class ExponentialSmoothingFunction extends RichMapFunction<ExponentialSmoothing.DataPoint, ExponentialSmoothing.DataPoint> {
+
         private transient ValueState<Double> lastSmoothedValue;
-
-        public ExponentialSmoothingFunction(double alpha) {
-            this.alpha = alpha;
-        }
 
         @Override
         public void open(Configuration parameters) throws Exception {
-            // Initialize state to store the last smoothed value
+            // 初始化状态，用于保存上一次的平滑值
             ValueStateDescriptor<Double> descriptor = new ValueStateDescriptor<>(
                     "lastSmoothedValue", Double.class);
             lastSmoothedValue = getRuntimeContext().getState(descriptor);
         }
 
         @Override
-        public Double map(Double value) throws Exception {
+        public ExponentialSmoothing.DataPoint map(ExponentialSmoothing.DataPoint dataPoint) throws Exception {
+            // 获取上一次的平滑值
             Double last = lastSmoothedValue.value();
             Double smoothedValue;
+
+            // 使用 CSV 中的 alpha 值进行平滑计算
+            double alpha = dataPoint.alpha;
+
             if (last == null) {
-                // Initially, the smoothed value is equal to the current value
-                smoothedValue = value;
+                // 初始情况下，平滑值等于当前值
+                smoothedValue = dataPoint.value;
             } else {
-                // Calculate the new smoothed value
-                smoothedValue = alpha * value + (1 - alpha) * last;
+                // 计算新的平滑值
+                smoothedValue = alpha * dataPoint.value + (1 - alpha) * last;
             }
-            // Update the state
+            // 更新状态
             lastSmoothedValue.update(smoothedValue);
-            return smoothedValue;
+
+            // 返回新的数据点，包含时间戳和经过平滑后的值，不输出 alpha
+            return new ExponentialSmoothing.DataPoint(dataPoint.timestamp, smoothedValue, alpha);
         }
     }
 }
