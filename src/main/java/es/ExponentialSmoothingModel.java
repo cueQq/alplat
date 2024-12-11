@@ -20,7 +20,12 @@ public class ExponentialSmoothingModel {
     // 自定义的 RichMapFunction，用于指数平滑
     public static class ExponentialSmoothingFunction extends RichMapFunction<ExponentialSmoothing.DataPoint, ExponentialSmoothing.DataPoint> {
 
+        private final double alpha;
         private transient ValueState<Double> lastSmoothedValue;
+
+        public ExponentialSmoothingFunction(double alpha) {
+            this.alpha = alpha;
+        }
 
         @Override
         public void open(Configuration parameters) throws Exception {
@@ -35,10 +40,6 @@ public class ExponentialSmoothingModel {
             // 获取上一次的平滑值
             Double last = lastSmoothedValue.value();
             Double smoothedValue;
-
-            // 使用 CSV 中的 alpha 值进行平滑计算
-            double alpha = dataPoint.alpha;
-
             if (last == null) {
                 // 初始情况下，平滑值等于当前值
                 smoothedValue = dataPoint.value;
@@ -49,8 +50,8 @@ public class ExponentialSmoothingModel {
             // 更新状态
             lastSmoothedValue.update(smoothedValue);
 
-            // 返回新的数据点，包含时间戳和经过平滑后的值，不输出 alpha
-            return new ExponentialSmoothing.DataPoint(dataPoint.timestamp, smoothedValue, alpha);
+            // 返回新的数据点，包含时间戳和平滑后的值
+            return new ExponentialSmoothing.DataPoint(dataPoint.timestamp, smoothedValue);
         }
     }
 }

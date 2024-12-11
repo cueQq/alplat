@@ -17,7 +17,7 @@ public class estest {
         env.setParallelism(1);
 
         // 从CSV文件读取数据流
-        String filePath = "src/main/java/es/es.csv"; // 这里替换为你的 CSV 文件路径
+        String filePath = "src/main/java/es/alpha.csv"; // 这里替换为你的 CSV 文件路径
         DataStream<String> csvStream = env.readTextFile(filePath);
 
         // 将 CSV 数据流转换为 DataPoint 数据流，包含 timestamp、value 和 alpha

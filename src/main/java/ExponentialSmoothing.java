@@ -16,11 +16,11 @@ public class ExponentialSmoothing {
 
         // 模拟数据源，可以替换为实际的数据源
         DataStream<DataPoint> dataStream = env.fromElements(
-                new DataPoint(1609459200L, 20.0),
-                new DataPoint(1609459201L, 21.0),
-                new DataPoint(1609459202L, 19.0),
-                new DataPoint(1609459203L, 18.0),
-                new DataPoint(1609459204L, 20.0)
+                new DataPoint(1949-01, 20.0),
+                new DataPoint(1949-02, 21.0),
+                new DataPoint(1949-03, 19.0),
+                new DataPoint(1949-04, 18.0),
+                new DataPoint(1949-05, 20.0)
         );
 
         // 设置指数平滑的参数 alpha

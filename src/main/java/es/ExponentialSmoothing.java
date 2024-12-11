@@ -1,11 +1,12 @@
 package es;
 
-import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
 
 public class ExponentialSmoothing {
 
@@ -16,23 +17,21 @@ public class ExponentialSmoothing {
         // 设置全局并行度为 1(输出就不会出现18>)
         env.setParallelism(1);
 
-        // 从CSV文件读取数据流
-        String filePath = "src/main/java/es/es.csv"; // 这里替换为你的 CSV 文件路径
-        DataStream<String> csvStream = env.readTextFile(filePath);
+        // 读取CSV文件数据
+        String filePath = "src/main/java/es/AirPassengers.csv"; // CSV文件路径
+        DataStream<DataPoint> dataStream = env.readTextFile(filePath)
+                .map(line -> {
+                    String[] fields = line.split(",");
+                    return new DataPoint(fields[0], Double.parseDouble(fields[1]));
+                });
 
-        // 将 CSV 数据流转换为 DataPoint 数据流，包含 timestamp、value 和 alpha
-        DataStream<DataPoint> dataStream = csvStream.map(line -> {
-            String[] parts = line.split(",");  // 假设 CSV 格式是: timestamp,value,alpha
-            long timestamp = Long.parseLong(parts[0]);
-            double value = Double.parseDouble(parts[1]);
-            double alpha = Double.parseDouble(parts[2]);
-            return new DataPoint(timestamp, value, alpha);
-        });
+        // 设置指数平滑的参数 alpha
+        double alpha = readAlphaFromCSV("src/main/java/es/alpha.csv");
 
         // 对数据流应用指数平滑函数
         DataStream<DataPoint> smoothedStream = dataStream
                 .keyBy(value -> 0) // 使用 keyBy 保证状态的正确性
-                .map(new ExponentialSmoothingModel.ExponentialSmoothingFunction());
+                .map(new ExponentialSmoothingModel.ExponentialSmoothingFunction(alpha));
 
         // 打印结果
         smoothedStream.print();
@@ -41,23 +40,49 @@ public class ExponentialSmoothing {
         env.execute("Exponential Smoothing Job");
     }
 
-    // 定义数据点类，用于存储时间戳、数据值和 alpha
+    // 定义数据点类，用于存储时间戳和数据值
     public static class DataPoint {
-        public long timestamp;
+        public String timestamp;
         public double value;
-        public double alpha;
 
-        public DataPoint(long timestamp, double value, double alpha) {
+        public DataPoint() {
+        }
+
+        public DataPoint(String timestamp, double value) {
             this.timestamp = timestamp;
             this.value = value;
-            this.alpha = alpha;
         }
 
         @Override
         public String toString() {
-            // 不输出 alpha，仅输出时间戳和经过平滑后的值
             return "[" + timestamp + "] " + value;
         }
+    }
+
+    // 读取 CSV 文件中的 alpha 参数
+    public static double readAlphaFromCSV(String csvFile) {
+        double alpha = -1; // 默认值为 -1 表示未读取到有效的 alpha
+
+        try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+            String line;
+            boolean isFirstLine = true;
+
+            // 读取 CSV 文件中的每一行
+            while ((line = br.readLine()) != null) {
+                if (isFirstLine) {
+                    // 跳过第一行（标题行）
+                    isFirstLine = false;
+                    continue;
+                }
+                // 获取 alpha 值
+                alpha = Double.parseDouble(line.trim());
+                break; // 只读取第一行的 alpha 值
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return alpha;
     }
 
 
