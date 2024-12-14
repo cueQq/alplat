@@ -1,12 +1,14 @@
 package es;
 
+import org.apache.flink.api.common.functions.RichMapFunction;
+import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-
 
 public class ExponentialSmoothing {
 
@@ -19,6 +21,8 @@ public class ExponentialSmoothing {
 
         // 读取CSV文件数据
         String filePath = "src/main/java/es/AirPassengers.csv"; // CSV文件路径
+        int totalLines = countLines(filePath);
+
         DataStream<DataPoint> dataStream = env.readTextFile(filePath)
                 .map(line -> {
                     String[] fields = line.split(",");
@@ -29,14 +33,14 @@ public class ExponentialSmoothing {
         double alpha = readAlphaFromCSV("src/main/java/es/alpha.csv");
 
         // 对数据流应用指数平滑函数
+        ExponentialSmoothingModel.ExponentialSmoothingFunction smoothingFunction = new ExponentialSmoothingModel.ExponentialSmoothingFunction(alpha, totalLines);
         DataStream<DataPoint> smoothedStream = dataStream
                 .keyBy(value -> 0) // 使用 keyBy 保证状态的正确性
-                .map(new ExponentialSmoothingModel.ExponentialSmoothingFunction(alpha));
+                .map(smoothingFunction)
+                .filter(dataPoint -> dataPoint != null); // 使用 filter 过滤掉 null 值
 
-        // 打印结果
-        smoothedStream.print();
-
-        // 执行任务
+        // 输出平滑结果
+        // smoothedStream.print(); // 移除这行
         env.execute("Exponential Smoothing Job");
     }
 
@@ -45,8 +49,7 @@ public class ExponentialSmoothing {
         public String timestamp;
         public double value;
 
-        public DataPoint() {
-        }
+        public DataPoint() {}
 
         public DataPoint(String timestamp, double value) {
             this.timestamp = timestamp;
@@ -83,6 +86,19 @@ public class ExponentialSmoothing {
         }
 
         return alpha;
+    }
+
+    // 读取 CSV 文件的行数
+    public static int countLines(String csvFile) {
+        int lineCount = 0;
+        try (BufferedReader br = new BufferedReader(new FileReader(csvFile))) {
+            while (br.readLine() != null) {
+                lineCount++;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return lineCount;
     }
 
 
