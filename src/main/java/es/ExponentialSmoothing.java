@@ -76,6 +76,7 @@ public class ExponentialSmoothing implements AlgoOperator<ExponentialSmoothing>,
                 .apply(new ExponentialSmoothingFunction(smoothingFactor));  // 使用 ExponentialSmoothingFunction 计算指数平滑
     }
 
+
     private static class ExponentialSmoothingFunction implements WindowFunction<Row, Row, Integer, TimeWindow> {
         private final Double smoothingFactor;
         private Double lastSmoothedValue = null;
@@ -137,6 +138,7 @@ public class ExponentialSmoothing implements AlgoOperator<ExponentialSmoothing>,
                     }
                 });
     }
+
 
 
 
