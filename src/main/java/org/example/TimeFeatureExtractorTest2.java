@@ -1,6 +1,6 @@
 package org.example;
 
-import FeatureGeneration.TimeFeatureExtractor2;
+import FeatureGeneration.Time.TimeFeatureExtractor2;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;

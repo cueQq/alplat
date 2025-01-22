@@ -1,7 +1,6 @@
-package FeatureGeneration;
+package FeatureGeneration.Time;
 
 import org.apache.flink.ml.common.param.HasInputCol;
-import org.apache.flink.ml.param.Param;
 import org.apache.flink.ml.param.StringArrayParam;
 
 public interface TimeFeatureExtractorParams<T> extends HasInputCol<T> {

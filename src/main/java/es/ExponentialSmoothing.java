@@ -1,7 +1,5 @@
 package es;
 
-
-
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.ml.api.AlgoOperator;
 import org.apache.flink.ml.param.Param;
@@ -23,6 +21,9 @@ import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.util.Preconditions;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,7 +49,8 @@ public class ExponentialSmoothing implements AlgoOperator<ExponentialSmoothing>,
 
         // 创建结果表的 Schema
         Schema schema = Schema.newBuilder()
-                .column("f0", DataTypes.DOUBLE())  // 显式使用默认的列名 f0
+                .column("timestamp", DataTypes.BIGINT())  // 时间戳列
+                .column("smoothed_value", DataTypes.DOUBLE())  // 平滑后的值列
                 .build();
 
         // 将结果转换为 Table
@@ -76,7 +78,6 @@ public class ExponentialSmoothing implements AlgoOperator<ExponentialSmoothing>,
                 .apply(new ExponentialSmoothingFunction(smoothingFactor));  // 使用 ExponentialSmoothingFunction 计算指数平滑
     }
 
-
     private static class ExponentialSmoothingFunction implements WindowFunction<Row, Row, Integer, TimeWindow> {
         private final Double smoothingFactor;
         private Double lastSmoothedValue = null;
@@ -88,7 +89,8 @@ public class ExponentialSmoothing implements AlgoOperator<ExponentialSmoothing>,
         @Override
         public void apply(Integer key, TimeWindow window, Iterable<Row> input, Collector<Row> out) {
             for (Row row : input) {
-                Double value = (Double) row.getField(1);  // 假设第二个字段是数值
+                Long timestamp = (Long) row.getField(0);  // 获取时间戳
+                Double value = (Double) row.getField(1);  // 获取数值
                 if (value == null) {
                     value = 0.0;  // 使用默认值处理 null
                 }
@@ -99,12 +101,11 @@ public class ExponentialSmoothing implements AlgoOperator<ExponentialSmoothing>,
                     lastSmoothedValue = smoothingFactor * value + (1 - smoothingFactor) * lastSmoothedValue;
                 }
 
-                // 只输出指数平滑的结果
-                out.collect(Row.of(lastSmoothedValue));
+                // 输出时间戳和指数平滑的结果
+                out.collect(Row.of(timestamp, lastSmoothedValue));
             }
         }
     }
-
 
     @Override
     public Map<Param<?>, Object> getParamMap() {
@@ -118,12 +119,7 @@ public class ExponentialSmoothing implements AlgoOperator<ExponentialSmoothing>,
                     @Override
                     public Row map(String line) throws Exception {
                         String[] fields = line.split(",");
-                        long timestamp = 0L;
-                        try {
-                            timestamp = Long.parseLong(fields[0]);  // 假设第一列是时间戳
-                        } catch (NumberFormatException e) {
-                            //System.err.println("Invalid timestamp format: " + fields[0]);
-                        }
+                        long timestamp = parseTimestamp(fields[0]);  // 解析 yyyy-MM 格式的时间戳
 
                         double value = 0.0;
                         if (fields.length > 1 && !fields[1].isEmpty()) {
@@ -139,13 +135,16 @@ public class ExponentialSmoothing implements AlgoOperator<ExponentialSmoothing>,
                 });
     }
 
-
-
-
-
-
-
-
+    // 解析 yyyy-MM 格式的时间戳
+    private static long parseTimestamp(String timestampStr) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM");
+        try {
+            Date date = dateFormat.parse(timestampStr);
+            return date.getTime();
+        } catch (ParseException e) {
+            throw new RuntimeException("Invalid timestamp format: " + timestampStr, e);
+        }
+    }
 
     @Override
     public void save(String path) throws IOException {

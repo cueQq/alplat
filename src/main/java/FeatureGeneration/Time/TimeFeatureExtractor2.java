@@ -1,4 +1,4 @@
-package FeatureGeneration;
+package FeatureGeneration.Time;
 
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;

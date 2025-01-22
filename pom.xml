@@ -7,6 +7,9 @@
     <artifactId>untitled1</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+
+
+
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
@@ -135,6 +138,29 @@
 
 
     </dependencies>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.0.0-M5</version>
+            <configuration>
+                <argLine>
+                    --illegal-access=deny
+                    --add-opens java.base/java.lang=ALL-UNNAMED
+                    --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+                    --add-opens java.base/java.lang.invoke=ALL-UNNAMED
+                    --add-opens java.base/java.math=ALL-UNNAMED
+                    --add-opens java.base/java.util=ALL-UNNAMED
+                    --add-opens java.base/java.util.concurrent=ALL-UNNAMED
+                    --add-opens java.base/java.net=ALL-UNNAMED
+                    --add-opens java.base/java.text=ALL-UNNAMED
+                </argLine>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
 
 
 
